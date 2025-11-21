@@ -1,0 +1,9 @@
+dataset = xdr_data
+| filter event_type = EVENT_LOG and action_evtlog_event_id = 4725
+| fields action_evtlog_data_fields, agent_hostname, action_evtlog_message
+| sort desc _time
+| filter action_evtlog_data_fields != null
+| alter UserName = replace(json_extract(action_evtlog_data_fields, "$.TargetUserName"), "\"","")
+| alter DomainName = replace(json_extract(action_evtlog_data_fields, "$.TargetDomainName"), "\"","")
+| alter WhoDid = replace(json_extract(action_evtlog_data_fields, "$.SubjectUserName"), "\"","")
+| view column order = populated
