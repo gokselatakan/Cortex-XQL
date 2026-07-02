@@ -1,0 +1,28 @@
+config timeframe = 180d
+| dataset = xdr_data
+| filter event_type = EVENT_LOG
+| filter action_evtlog_event_id in (4720,4722,4723,4724,4725,4726,4738,4740,4767,4728,4729,4732,4733,4756,4757)
+| filter action_evtlog_data_fields != null
+
+// Parse common fields out of the EventData JSON
+| alter TargetUserName   = json_extract_scalar(action_evtlog_data_fields, "$.TargetUserName"),
+        TargetDomainName = json_extract_scalar(action_evtlog_data_fields, "$.TargetDomainName"),
+        SubjectUsername  = json_extract_scalar(action_evtlog_data_fields, "$.SubjectUserName"),
+        SubjectDomainName= json_extract_scalar(action_evtlog_data_fields, "$.SubjectDomainName"),
+        MemberName       = json_extract_scalar(action_evtlog_data_fields, "$.MemberName"),
+        GroupName        = json_extract_scalar(action_evtlog_data_fields, "$.TargetUserName")
+
+// Narrow to one account (replace USERNAME_HERE)
+| filter TargetUserName = "USERNAME_HERE"
+     or SubjectUserName = "USERNAME_HERE"
+     or (MemberName contains "USERNAME_HERE")
+     or (action_evtlog_message contains "USERNAME_HERE")
+
+// Output columns for Excel
+| alter EventID = action_evtlog_event_id
+| fields _time, agent_hostname, EventID,
+         TargetDomainName, TargetUserName,
+         SubjectDomainName, SubjectUserName,
+         GroupName, MemberName,
+         action_evtlog_message, action_evtlog_data_fields
+| sort desc _time
