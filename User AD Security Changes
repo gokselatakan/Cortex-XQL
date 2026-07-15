@@ -1,0 +1,52 @@
+config timeframe = 365d
+| dataset = xdr_data
+| filter event_type = EVENT_LOG
+| filter action_evtlog_event_id in (
+    4720, 4722, 4723, 4724, 4725, 4726, 4738, 4740, 4767,
+    4728, 4729, 4732, 4733, 4756, 4757
+)
+| filter action_evtlog_data_fields != null
+
+| alter TargetUserName = json_extract_scalar(action_evtlog_data_fields, "$.TargetUserName"),
+        TargetDomainName = json_extract_scalar(action_evtlog_data_fields, "$.TargetDomainName"),
+        SubjectUserName = json_extract_scalar(action_evtlog_data_fields, "$.SubjectUserName"),
+        SubjectDomainName = json_extract_scalar(action_evtlog_data_fields, "$.SubjectDomainName"),
+        MemberName = json_extract_scalar(action_evtlog_data_fields, "$.MemberName"),
+        MemberSid = json_extract_scalar(action_evtlog_data_fields, "$.MemberSid")
+
+| filter TargetUserName = "SAM"
+     or SubjectUserName = "SAM"
+     or MemberName contains "SAM"
+
+| alter EventID = action_evtlog_event_id,
+        WhoDid = SubjectUserName,
+        WhatChanged = if(
+            action_evtlog_event_id = 4720, "User Account Created",
+            if(action_evtlog_event_id = 4722, "User Account Enabled",
+            if(action_evtlog_event_id = 4723, "Password Change Attempted",
+            if(action_evtlog_event_id = 4724, "Password Reset Attempted",
+            if(action_evtlog_event_id = 4725, "User Account Disabled",
+            if(action_evtlog_event_id = 4726, "User Account Deleted",
+            if(action_evtlog_event_id = 4738, "User Account Changed",
+            if(action_evtlog_event_id = 4740, "User Account Locked Out",
+            if(action_evtlog_event_id = 4767, "User Account Unlocked",
+            if(action_evtlog_event_id = 4728, "Added to Global Group",
+            if(action_evtlog_event_id = 4729, "Removed from Global Group",
+            if(action_evtlog_event_id = 4732, "Added to Domain Local Group",
+            if(action_evtlog_event_id = 4733, "Removed from Domain Local Group",
+            if(action_evtlog_event_id = 4756, "Added to Universal Group",
+            if(action_evtlog_event_id = 4757, "Removed from Universal Group",
+            "Other AD Change")))))))))))))))
+
+| fields _time,
+         EventID,
+         WhatChanged,
+         TargetDomainName,
+         TargetUserName,
+         MemberName,
+         MemberSid,
+         WhoDid,
+         SubjectDomainName,
+         agent_hostname
+
+| sort desc _time
