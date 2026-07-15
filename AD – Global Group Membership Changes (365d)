@@ -1,0 +1,23 @@
+config timeframe = 365d
+| dataset = xdr_data
+| filter event_type = EVENT_LOG
+| filter action_evtlog_event_id in (4728, 4729)
+| filter action_evtlog_data_fields != null
+
+| alter GroupName = json_extract_scalar(action_evtlog_data_fields, "$.TargetUserName"),
+        EventAction = if(
+            action_evtlog_event_id = 4728, "Member Added to Global Group",
+            if(action_evtlog_event_id = 4729, "Member Removed from Global Group", "Other")
+        )
+
+| filter GroupName != null
+
+| comp count(action_evtlog_event_id) as EventCount
+    by GroupName, action_evtlog_event_id, EventAction
+
+| sort desc EventCount
+
+| fields GroupName,
+         action_evtlog_event_id,
+         EventAction,
+         EventCount
