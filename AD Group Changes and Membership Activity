@@ -1,0 +1,53 @@
+config timeframe = 365d
+| dataset = xdr_data
+| filter event_type = EVENT_LOG
+| filter action_evtlog_event_id in (
+    4727, 4728, 4729, 4730, 4737,
+    4731, 4732, 4733, 4734, 4735,
+    4754, 4755, 4756, 4757, 4758
+)
+| filter action_evtlog_data_fields != null
+
+| alter GroupName = json_extract_scalar(action_evtlog_data_fields, "$.TargetUserName"),
+        GroupDomain = json_extract_scalar(action_evtlog_data_fields, "$.TargetDomainName"),
+        GroupSid = json_extract_scalar(action_evtlog_data_fields, "$.TargetSid"),
+        MemberName = json_extract_scalar(action_evtlog_data_fields, "$.MemberName"),
+        MemberSid = json_extract_scalar(action_evtlog_data_fields, "$.MemberSid"),
+        SubjectUserName = json_extract_scalar(action_evtlog_data_fields, "$.SubjectUserName"),
+        SubjectDomainName = json_extract_scalar(action_evtlog_data_fields, "$.SubjectDomainName")
+
+| filter GroupName = "GROUP-NAME"
+
+| alter EventID = action_evtlog_event_id,
+        WhoDid = SubjectUserName,
+        WhatChanged = if(
+            action_evtlog_event_id = 4727, "Global Group Created",
+            if(action_evtlog_event_id = 4728, "Member Added to Global Group",
+            if(action_evtlog_event_id = 4729, "Member Removed from Global Group",
+            if(action_evtlog_event_id = 4730, "Global Group Deleted",
+            if(action_evtlog_event_id = 4737, "Global Group Changed",
+            if(action_evtlog_event_id = 4731, "Domain Local Group Created",
+            if(action_evtlog_event_id = 4732, "Member Added to Domain Local Group",
+            if(action_evtlog_event_id = 4733, "Member Removed from Domain Local Group",
+            if(action_evtlog_event_id = 4734, "Domain Local Group Deleted",
+            if(action_evtlog_event_id = 4735, "Domain Local Group Changed",
+            if(action_evtlog_event_id = 4754, "Universal Group Created",
+            if(action_evtlog_event_id = 4755, "Universal Group Changed",
+            if(action_evtlog_event_id = 4756, "Member Added to Universal Group",
+            if(action_evtlog_event_id = 4757, "Member Removed from Universal Group",
+            if(action_evtlog_event_id = 4758, "Universal Group Deleted",
+            "Other Group Change")))))))))))))))
+
+| fields _time,
+         EventID,
+         WhatChanged,
+         GroupDomain,
+         GroupName,
+         GroupSid,
+         MemberName,
+         MemberSid,
+         WhoDid,
+         SubjectDomainName,
+         agent_hostname
+
+| sort desc _time
