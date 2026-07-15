@@ -1,0 +1,33 @@
+config timeframe = 365d
+| dataset = xdr_data
+| filter event_type = EVENT_LOG
+| filter action_evtlog_data_fields != null
+
+| alter TargetUserName = json_extract_scalar(action_evtlog_data_fields, "$.TargetUserName"),
+        TargetDomainName = json_extract_scalar(action_evtlog_data_fields, "$.TargetDomainName"),
+        SubjectUserName = json_extract_scalar(action_evtlog_data_fields, "$.SubjectUserName"),
+        SubjectDomainName = json_extract_scalar(action_evtlog_data_fields, "$.SubjectDomainName"),
+        MemberName = json_extract_scalar(action_evtlog_data_fields, "$.MemberName"),
+        MemberSid = json_extract_scalar(action_evtlog_data_fields, "$.MemberSid")
+
+| filter TargetUserName = "SAM"
+     or SubjectUserName = "SAM"
+     or MemberName contains "SAM"
+     or action_evtlog_data_fields contains "SAM"
+     or action_evtlog_message contains "SAM"
+
+| alter EventID = action_evtlog_event_id,
+        WhoDid = SubjectUserName
+
+| fields _time,
+         EventID,
+         TargetDomainName,
+         TargetUserName,
+         MemberName,
+         MemberSid,
+         WhoDid,
+         SubjectDomainName,
+         agent_hostname,
+         action_evtlog_message
+
+| sort desc _time
